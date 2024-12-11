@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Request
+from typing import Annotated
+from fastapi import FastAPI, HTTPException, Request, Path
 from pydantic import BaseModel
-from typing import List
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 
@@ -25,14 +25,12 @@ async def users_list(request: Request, user_id: int) -> HTMLResponse:
 
 
 @app.post("/user/{username}/{age}")
-async def create_user(user: User): ## Если не добавлять сюда переменные - не будет ячеек и наоборот
-    if not users:
-        new_id = 1
-    else:
-        new_id = max((user.id for user in users)) + 1
-    new_user = User(id=new_id, username=user.username, age=user.age)
+async def post_user(username: Annotated[str, Path(min_length=5, max_length=20, description='Enter username', example='UrbanUser')],
+                    age: Annotated[int, Path(le=120, ge=18, description='Enter age', example='24')]) -> User:
+    new_id = max(users, key=lambda x: int(x.id)).id + 1 if users else 1
+    new_user = User(id=new_id, username=username, age=age)
     users.append(new_user)
-    return f"User {new_id} is registered"
+    return new_user
 
 
 @app.put('/user/{user_id}/{username}/{age}')
